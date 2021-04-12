@@ -26,9 +26,33 @@ def tag(training_list, test_file, output_file):
     transition_table = build_transition_table(tag_transition_count)
     initial_table = build_initial_table(initial_tag_count)
 
-    print(initial_table)
+    i = 0
+    for entry in emission_table:
+        # print(i, entry, emission_table[entry])
+        if i == 1:
+            break
+        i += 1
+
+    print("\n")
+
+    i = 0
+    for entry in transition_table:
+        # print(i, entry, transition_table[entry])
+        if i == 5:
+            break
+        i += 1
+
+    print("\n")
+
+    i = 0
+    for entry in initial_table:
+        # print(i, entry, initial_table[entry])
+        if i == 5:
+            break
+        i += 1
 
     naive_tagger(emission_table, test_f, output_f)
+    # viterbi_tagger(test_f, output_f, initial_table, transition_table, emission_table)
 
 def naive_tagger(emission_table, test_f, output_f):
 
@@ -48,34 +72,141 @@ def naive_tagger(emission_table, test_f, output_f):
             s = line.strip() + " : " + "???" + "\n"
             output_f.write(s)
 
-def viterbi_tagger(observations, tags, initial_table, transition_table, emission_table):
-    print("Tagging using the viterbi algorithm")
+def viterbi_tagger(test_f, output_f, initial_table, transition_table, emission_table):
+
+    observations = test_f.readlines()
+
+    tag_list = []
+    for tag in transition_table:
+        tag_list.append(tag)
+    
+    prob_trellis = []
+    path_trellis = []
+
+    for i in range(len(tag_list)):
+        prob_trellis.append([None] * len(observations))
+        path_trellis.append([None] * len(observations))
+
+    i = 0
+    for tag in tag_list:
+        if tag in initial_table:
+            if observations[0].strip() in emission_table:
+                if tag in emission_table[observations[0].strip()]:
+                    prob_trellis[i][0] = initial_table[tag] * emission_table[observations[0].strip()][tag]
+                else:
+                    prob_trellis[i][0] = initial_table[tag] * 0.000000001
+            else:
+                prob_trellis[i][0] = initial_table[tag] * 0.000000001
+        else:
+            if observations[0].strip() in emission_table:
+                if tag in emission_table[observations[0].strip()]:
+                    prob_trellis[i][0] = 0.000000001 * emission_table[observations[0].strip()][tag]
+                else:
+                    prob_trellis[i][0] = 0.000000001
+            else:
+                prob_trellis[i][0] = 0.000000001
+        path_trellis[i][0] = [tag]
+        i += 1
+    
+
+    # Iterate through columns of trellis
+    j = 0  
+    for observation in observations:
+
+        if j == 0:
+            j += 1
+            continue
+        
+        # Iterate through rows of trellis for this column
+        k = 0
+        total = 0
+        for tag1 in tag_list:
+            
+            l = 0
+            # Want to determine the state with the highest probability in the previous observation
+            probs = []
+            for tag2 in tag_list:
+                # print("l, j:", l, j)
+                if tag2 in transition_table:
+                    if tag1 in transition_table[tag2]:
+                        if observation.strip() in emission_table:
+                            if tag1 in emission_table[observation.strip()]:
+                                probs.append((prob_trellis[l][j - 1] * transition_table[tag2][tag1] * emission_table[observation.strip()][tag1], l, tag2))
+                            else:
+                                probs.append((prob_trellis[l][j - 1] * transition_table[tag2][tag1] * 0.000000001, l, tag2))
+                        else:
+                            probs.append((prob_trellis[l][j - 1] * transition_table[tag2][tag1] * 0.000000001, l, tag2))
+                    else:
+                        if observation.strip() in emission_table:
+                            if tag1 in emission_table[observation.strip()]:
+                                probs.append((prob_trellis[l][j - 1] * 0.000000001 * emission_table[observation.strip()][tag1], l, tag2))
+                            else:
+                                probs.append((prob_trellis[l][j - 1] * 0.000000001 * 0.000000001, l, tag2))
+                        else:
+                            probs.append((prob_trellis[l][j - 1] * 0.000000001 * 0.000000001, l, tag2))
+                else:
+                    if observation.strip() in emission_table:
+                        if tag1 in emission_table[observation.strip()]:
+                            probs.append((prob_trellis[l][j - 1] * 0.000000001 * emission_table[observation.strip()][tag1], l, tag2))
+                        else:
+                            probs.append((prob_trellis[l][j - 1] * 0.000000001 * 0.000000001, l, tag2))
+                    else:
+                        probs.append((prob_trellis[l][j - 1] * 0.000000001 * 0.000000001, l, tag2))
+                l += 1
+            
+            
+            
+            max_tuple = max(probs, key=operator.itemgetter(0))
+            max_tag_index = max_tuple[1]
+            max_tag = max_tuple[2]
+            
+
+            if max_tag in transition_table:
+                if tag1 in transition_table[max_tag]:
+                    if observation.strip() in emission_table:
+                        if tag1 in emission_table[observation.strip()]:
+                            prob_trellis[k][j] = prob_trellis[max_tag_index][j - 1] * transition_table[max_tag][tag1] * emission_table[observation.strip()][tag1]
+                        else:
+                            prob_trellis[k][j] = prob_trellis[max_tag_index][j - 1] * transition_table[max_tag][tag1] * 0.000000001
+                    else:
+                        prob_trellis[k][j] = prob_trellis[max_tag_index][j - 1] * transition_table[max_tag][tag1] * 0.000000001
+                else:
+                    if observation.strip() in emission_table:
+                        if tag1 in emission_table[observation.strip()]:
+                            prob_trellis[k][j] = prob_trellis[max_tag_index][j - 1] * 0.000000001 * emission_table[observation.strip()][tag1]
+                        else:
+                            prob_trellis[k][j] = prob_trellis[max_tag_index][j - 1] * 0.000000001 * 0.000000001
+                    else:
+                        prob_trellis[k][j] = prob_trellis[max_tag_index][j - 1] * 0.000000001 * 0.000000001
+            else:
+                if observation.strip() in emission_table:
+                    if tag1 in emission_table[observation.strip()]:
+                        prob_trellis[k][j] = prob_trellis[max_tag_index][j - 1] * 0.000000001 * emission_table[observation.strip()][tag1]
+                    else:
+                        prob_trellis[k][j] = prob_trellis[max_tag_index][j - 1] * 0.000000001 * 0.000000001
+                else:
+                    prob_trellis[k][j] = prob_trellis[max_tag_index][j - 1] * 0.000000001 * 0.000000001
+        
+            path_trellis[k][j] = path_trellis[max_tag_index][j - 1] + [tag1]
+
+            total += prob_trellis[k][j]
+
+            k += 1
+        
+        # Normalize
+        for m in range(len(prob_trellis)):
+            prob_trellis[m][j] /= total
 
 
 
-    # trellis = {}
+        j += 1
 
-    # for tag in tags:
-    #     trellis[tag]
-
-    # probability == p. Tm: the transition matrix. Em: the emission matrix.
-
-    # function viterbi(observations, S, Π, Tm, Em): best_path 
-    # trellis ← matrix(length(S), length(O))  # To hold p. of each state given each observation.
-    # # Determine each hidden state's p. at time 0…
-    # for s in range(length(S)):
-    #     trellis[s, 0] ← Π[s] * Em[s, O[0]] 
-    # # …and afterwards, assuming each state's most likely prior state, k.
-    # for o in range(1, length(O)):
-    #     for s in range(length(S)):
-    #         k ← argmax(k in trellis[k, o-1] * Tm[k, s] * Em[s, o])
-    #         trellis[s, o] ← trellis[k, o-1] * Tm[k, s] * Em[s, o]
-    # best_path ← list()
-    # for o in range(-1, -(length(O)+1), -1):  # Backtrack from last observation.
-    #     k ← argmax(k in trellis[k, o])  # Most likely state at o 
-    #     best_path.insert(0, S[k])       # is noted for return.
-    # return best_path
-
+    z = 0
+    for v in path_trellis[max_tag_index][j - 1]:
+        s = observations[z].strip() + " : " + v + "\n"
+        print(s, end='')
+        output_f.write(s)
+        z += 1
 
 def build_count_tables(training_f):
 
@@ -112,7 +243,7 @@ def build_count_tables(training_f):
                 or prev_word == "?" and ( (word == '"' and opening_tag) or (word != '"' and word[0].isupper()) )\
                 or prev_word == "!" and ( (word == '"' and opening_tag) or (word != '"' and word[0].isupper()) )\
                 or prev_word == '"' and (word[0].isupper() or word == '"'):
-                print(prev_prev_word, prev_word, word)
+
                 if tag not in initial_tag_count:
                     initial_tag_count[tag] = 1
                 else:
