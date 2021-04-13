@@ -21,46 +21,25 @@ def tag(training_list, test_file, output_file):
     # output_f.write(s)
     
 
-    word_tag_count, tag_transition_count, initial_tag_count = build_count_tables(training_f)
+    word_tag_count, tag_transition_count, initial_tag_count, total_tag_count = build_count_tables(training_f)
 
     emission_table = build_emission_table(word_tag_count)
     transition_table = build_transition_table(tag_transition_count)
     initial_table = build_initial_table(initial_tag_count)
 
-    i = 0
-    for entry in emission_table:
-        # print(i, entry, emission_table[entry])
-        if i == 1:
-            break
-        i += 1
 
-    print("\n")
 
-    i = 0
-    for entry in transition_table:
-        # print(i, entry, transition_table[entry])
-        if i == 5:
-            break
-        i += 1
-
-    print("\n")
-
-    i = 0
-    for entry in initial_table:
-        # print(i, entry, initial_table[entry])
-        if i == 5:
-            break
-        i += 1
-
-    naive_tagger(emission_table, test_f, output_f)
+    naive_tagger(emission_table, total_tag_count, test_f, output_f)
     # viterbi_tagger(test_f, output_f, initial_table, transition_table, emission_table)
 
-def naive_tagger(emission_table, test_f, output_f):
+def naive_tagger(emission_table, total_tag_count, test_f, output_f):
 
     print("Tagging naively, using only emission probabilities...")
 
-    naive_choices = copy.deepcopy(emission_table)
+    most_common_tag = max(total_tag_count.items(), key=operator.itemgetter())[0]
+    print(most_common_tag)
 
+    naive_choices = copy.deepcopy(emission_table)
     # Simply choose the highest emission probability for each word
     for word in naive_choices:
         naive_choices[word] = max(naive_choices[word].items(), key=operator.itemgetter(1))[0]
@@ -70,7 +49,7 @@ def naive_tagger(emission_table, test_f, output_f):
             s = line.strip() + " : " + naive_choices[line.strip()] + "\n"
             output_f.write(s)
         else:
-            s = line.strip() + " : " + "???" + "\n"
+            s = line.strip() + " : " + "NN1" + "\n"
             output_f.write(s)
 
 def viterbi_tagger(test_f, output_f, initial_table, transition_table, emission_table):
@@ -217,6 +196,7 @@ def build_count_tables(training_f):
     word_tag_count = {}
     tag_transition_count = {}
     initial_tag_count = {}
+    total_tag_count = {}
 
     for f in training_f:
         prev_tag = None
@@ -251,6 +231,12 @@ def build_count_tables(training_f):
                 else:
                     initial_tag_count[tag] += 1
 
+            if tag not in total_tag_count: 
+                total_tag_count = 1
+            else:
+                total_tag_count += 1
+
+
             if prev_tag:
                 if prev_tag not in tag_transition_count:
                     tag_transition_count[prev_tag] = {}
@@ -274,7 +260,7 @@ def build_count_tables(training_f):
             prev_word = word
             prev_tag = tag
 
-    return word_tag_count, tag_transition_count, initial_tag_count
+    return word_tag_count, tag_transition_count, initial_tag_count, total_tag_count
 
 def build_initial_table(initial_tag_count):
     initial_dict = copy.deepcopy(initial_tag_count)
