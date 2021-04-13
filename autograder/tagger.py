@@ -5,6 +5,7 @@ import os
 import sys
 import copy
 import operator
+import timeit
 
 def tag(training_list, test_file, output_file):
     # Tag the words from the untagged input file and write them into the output file.
@@ -105,11 +106,12 @@ def viterbi_tagger(test_f, output_f, initial_table, transition_table, emission_t
                     prob_trellis[i][0] = 0.000000001
             else:
                 prob_trellis[i][0] = 0.000000001
-        path_trellis[i][0] = [tag]
+        path_trellis[i][0] = [i]
         i += 1
     
 
     # Iterate through columns of trellis
+    probs = [None] * len(tag_list)
     j = 0  
     for observation in observations:
 
@@ -124,38 +126,35 @@ def viterbi_tagger(test_f, output_f, initial_table, transition_table, emission_t
             
             l = 0
             # Want to determine the state with the highest probability in the previous observation
-            probs = []
+            
             for tag2 in tag_list:
-                # print("l, j:", l, j)
                 if tag2 in transition_table:
                     if tag1 in transition_table[tag2]:
                         if observation.strip() in emission_table:
                             if tag1 in emission_table[observation.strip()]:
-                                probs.append((prob_trellis[l][j - 1] * transition_table[tag2][tag1] * emission_table[observation.strip()][tag1], l, tag2))
+                                probs[l] = ((prob_trellis[l][j - 1] * transition_table[tag2][tag1] * emission_table[observation.strip()][tag1], l, tag2))
                             else:
-                                probs.append((prob_trellis[l][j - 1] * transition_table[tag2][tag1] * 0.000000001, l, tag2))
+                                probs[l] = ((prob_trellis[l][j - 1] * transition_table[tag2][tag1] * 0.000000001, l, tag2))
                         else:
-                            probs.append((prob_trellis[l][j - 1] * transition_table[tag2][tag1] * 0.000000001, l, tag2))
+                            probs[l] = ((prob_trellis[l][j - 1] * transition_table[tag2][tag1] * 0.000000001, l, tag2))
                     else:
                         if observation.strip() in emission_table:
                             if tag1 in emission_table[observation.strip()]:
-                                probs.append((prob_trellis[l][j - 1] * 0.000000001 * emission_table[observation.strip()][tag1], l, tag2))
+                                probs[l] = ((prob_trellis[l][j - 1] * 0.000000001 * emission_table[observation.strip()][tag1], l, tag2))
                             else:
-                                probs.append((prob_trellis[l][j - 1] * 0.000000001 * 0.000000001, l, tag2))
+                                probs[l] = ((prob_trellis[l][j - 1] * 0.000000001 * 0.000000001, l, tag2))
                         else:
-                            probs.append((prob_trellis[l][j - 1] * 0.000000001 * 0.000000001, l, tag2))
+                            probs[l] = ((prob_trellis[l][j - 1] * 0.000000001 * 0.000000001, l, tag2))
                 else:
                     if observation.strip() in emission_table:
                         if tag1 in emission_table[observation.strip()]:
-                            probs.append((prob_trellis[l][j - 1] * 0.000000001 * emission_table[observation.strip()][tag1], l, tag2))
+                            probs[l] = ((prob_trellis[l][j - 1] * 0.000000001 * emission_table[observation.strip()][tag1], l, tag2))
                         else:
-                            probs.append((prob_trellis[l][j - 1] * 0.000000001 * 0.000000001, l, tag2))
+                            probs[l] = ((prob_trellis[l][j - 1] * 0.000000001 * 0.000000001, l, tag2))
                     else:
-                        probs.append((prob_trellis[l][j - 1] * 0.000000001 * 0.000000001, l, tag2))
+                        probs[l] = ((prob_trellis[l][j - 1] * 0.000000001 * 0.000000001, l, tag2))
                 l += 1
-            
-            
-            
+
             max_tuple = max(probs, key=operator.itemgetter(0))
             max_tag_index = max_tuple[1]
             max_tag = max_tuple[2]
@@ -187,7 +186,7 @@ def viterbi_tagger(test_f, output_f, initial_table, transition_table, emission_t
                 else:
                     prob_trellis[k][j] = prob_trellis[max_tag_index][j - 1] * 0.000000001 * 0.000000001
         
-            path_trellis[k][j] = path_trellis[max_tag_index][j - 1] + [tag1]
+            path_trellis[k][j] = path_trellis[max_tag_index][j - 1] + [k]
 
             total += prob_trellis[k][j]
 
@@ -197,13 +196,16 @@ def viterbi_tagger(test_f, output_f, initial_table, transition_table, emission_t
         for m in range(len(prob_trellis)):
             prob_trellis[m][j] /= total
 
-
-
         j += 1
 
     z = 0
+
+    tag_dict = {}    
+    for i in range(len(tag_list)):
+        tag_dict[i] = tag_list[i]
+
     for v in path_trellis[max_tag_index][j - 1]:
-        s = observations[z].strip() + " : " + v + "\n"
+        s = observations[z].strip() + " : " + tag_dict[v] + "\n"
         print(s, end='')
         output_f.write(s)
         z += 1
