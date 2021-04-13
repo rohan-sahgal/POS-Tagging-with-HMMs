@@ -36,8 +36,7 @@ def naive_tagger(emission_table, total_tag_count, test_f, output_f):
 
     print("Tagging naively, using only emission probabilities...")
 
-    most_common_tag = max(total_tag_count.items(), key=operator.itemgetter())[0]
-    print(most_common_tag)
+    most_common_tag = max(total_tag_count.items(), key=operator.itemgetter(1))[0]
 
     naive_choices = copy.deepcopy(emission_table)
     # Simply choose the highest emission probability for each word
@@ -49,7 +48,7 @@ def naive_tagger(emission_table, total_tag_count, test_f, output_f):
             s = line.strip() + " : " + naive_choices[line.strip()] + "\n"
             output_f.write(s)
         else:
-            s = line.strip() + " : " + "NN1" + "\n"
+            s = line.strip() + " : " + most_common_tag.strip() + "\n"
             output_f.write(s)
 
 def viterbi_tagger(test_f, output_f, initial_table, transition_table, emission_table):
@@ -232,9 +231,9 @@ def build_count_tables(training_f):
                     initial_tag_count[tag] += 1
 
             if tag not in total_tag_count: 
-                total_tag_count = 1
+                total_tag_count[tag] = 1
             else:
-                total_tag_count += 1
+                total_tag_count[tag] += 1
 
 
             if prev_tag:
