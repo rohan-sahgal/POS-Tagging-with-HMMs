@@ -6,17 +6,8 @@ if __name__ == '__main__':
     # Invoke the shell command to train and test the HMM tagger
 
     parameters = sys.argv
-    training_list = parameters[parameters.index("-d") + 1 : parameters.index("-t")]
-    test_path = parameters[parameters.index("-t") + 1]
     output_path = parameters[parameters.index("-o") + 1]
     solution_path = parameters[parameters.index("-s") + 1]
-
-    training_string = ""
-    for f in training_list:
-        training_string += f + " "
-
-    print(training_string)
-    os.system("py tagger.py -d {} -t {} -o {}".format(training_string, test_path, output_path))
 
     # Compare the contents of the HMM tagger output with the reference solution.
     # Store the missed cases and overall stats in results.txt
@@ -41,3 +32,4 @@ if __name__ == '__main__':
         # Add stats at the end of the results file.
         results_file.write(f"Total words seen: {len(output)}.\n")
         results_file.write(f"Total matches: {total_matches}.\n")
+        results_file.write("Tagging accuracy: {:.2f}%.".format((total_matches / len(output)) * 100))
