@@ -8,6 +8,16 @@ py tagger.py -d [training files] -t [test file] -o [output file]
 
 The output will be a sequence of tagged words.
 
+**_To evaluate accuracy:_**
+
+You need some solution file that has the correct tags for each sequence, and you compare that with the output of `tagger.py`
+
+```
+py evaluator.py -o [output file] -s [solution file]
+```
+
+This will output `results.txt` which contains a list of missed tags as well as an accuracy percentage.
+
 ## Background
 
 ### POS Tagging
