@@ -213,7 +213,6 @@ def viterbi_tagger(test_f, output_f, initial_table, transition_table, emission_t
         path_trellis[i][0] = [i]
         i += 1
     
-
     # Iterate through columns of trellis
     probs = [None] * len(tag_list)
     j = 0  
@@ -263,7 +262,6 @@ def viterbi_tagger(test_f, output_f, initial_table, transition_table, emission_t
             max_tag_index = max_tuple[1]
             max_tag = max_tuple[2]
             
-
             if max_tag in transition_table:
                 if tag1 in transition_table[max_tag]:
                     if observation.strip() in emission_table:
@@ -362,7 +360,6 @@ def build_count_tables(training_f):
                 total_tag_count[tag] = 1
             else:
                 total_tag_count[tag] += 1
-
 
             if prev_tag:
                 if prev_tag not in tag_transition_count:
@@ -479,7 +476,7 @@ if __name__ == '__main__':
     output_file = parameters[parameters.index("-o")+1]
     print("Training files: " + str(training_list))
     print("Test file: " + test_file)
-    print("Ouptut file: " + output_file)
+    print("Output file: " + output_file)
 
     # Start the training and tagging operation.
     tag (training_list, test_file, output_file)
